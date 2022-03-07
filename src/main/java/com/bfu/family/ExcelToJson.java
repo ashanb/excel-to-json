@@ -1,3 +1,4 @@
+package com.bfu.family;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.*;
@@ -17,6 +18,7 @@ import java.util.zip.ZipInputStream;
 
 public class ExcelToJson {
     final static LinkedList<String> spouseT = new LinkedList<>();
+    final static LinkedList<String> foundingParentsList = new LinkedList<>();
 
     public static void main(String[] args) throws Exception {
         try {
@@ -29,24 +31,29 @@ public class ExcelToJson {
             spouseT.add(".W");
             spouseT.add(".(D)");
 
-            final LinkedList<String> foundingParentsList = new LinkedList<>();
-            LinkedHashMap<String, Member> subTreeMap = new LinkedHashMap<>();
-            LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap = new LinkedHashMap<>();
+            LinkedHashMap<String, Member> subTreeMap;
+            LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap;
 
-            Path source = Paths.get("src\\main\\resources\\FamilyTreeInfo-2022.03.06.zip");
-            Path target = Paths.get("src\\main\\resources\\FamilyTreeInfo-2022.03.06");
+            String filePath =
+                    args != null && args.length > 0 && args[0] != null? args[0] :"C:\\Users\\Ashan\\Downloads\\bfu\\FamilyTreeInfo-2022.03.06.zip";
 
-//            try {
-//                unzipFolder(source, target);
-//                System.out.println("File Unzip Completed.");
-//
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
+            Path source = Paths.get(filePath);
+            final String outputJsonPath = (args != null && args.length > 1 && args[1] != null) ? args[1] : "D:\\my-projects\\github\\family\\dist\\node\\data.json";
+
+            if (filePath.endsWith("zip")) {
+                try {
+                    Path target = Paths.get(filePath.split(".zip")[0]);
+                    unzipFolder(source, target);
+                    System.out.println("File Unzip Completed.");
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
 
             System.out.println("Read Excel Files Started.");
 
-            File folder = new File("src\\main\\resources\\FamilyTreeInfo-2022.03.06");
+            File folder = new File(filePath.split(".zip")[0]);
             File[] listOfFiles = folder.listFiles();
             assert listOfFiles != null;
             List<File> files = Arrays.asList(listOfFiles);
@@ -70,11 +77,14 @@ public class ExcelToJson {
 
                     try {
                         // Pass Excel to Java Flat Objects
-                        String foundingParentName = readFromExcel(file.getAbsolutePath(), foundingParentsList, subTreeMap, jsTreeSubTreeMap);
+                        String foundingParentName = readFromExcel(file.getAbsolutePath(), subTreeMap, jsTreeSubTreeMap);
                         // Interconnect Java Objects in to Tree.
                         convertToTreeNodes(foundingParentName, subTreeMap, jsTreeSubTreeMap);
                         // logs
-                        jsTreeSubTreeMap.get(foundingParentName).setTitle(jsTreeSubTreeMap.get(foundingParentName).getTitle() + ", Registered Members : " + (jsTreeSubTreeMap.size() - 1));
+                        jsTreeSubTreeMap
+                                .get(foundingParentName)
+                                .setTitle(jsTreeSubTreeMap.get(foundingParentName)
+                                        .getTitle() + ", Registered Members : " + (jsTreeSubTreeMap.size() - 1));
 
                         // add to tree
                         jsTreeRoot.getChildren().get(0).addChild(jsTreeSubTreeMap.get(foundingParentName));
@@ -88,7 +98,6 @@ public class ExcelToJson {
             jsTreeRoot.setTitle(jsTreeRoot.getTitle() + ", Registered Members : " + (memberCounter - 1));
             // Generate Tree Json from Java Tree.
             ObjectMapper objectMapper = new ObjectMapper();
-            final String outputJsonPath = "D:\\my-projects\\github\\family\\dist\\node\\data.json";
             objectMapper.writeValue(new File(outputJsonPath), jsTreeRoot);
 
             System.out.println();
@@ -103,7 +112,7 @@ public class ExcelToJson {
 
             Path fileName = Path.of(outputJsonPath);
 
-            String temp[] = Files.readString(fileName).split("\"id\":");
+            String[] temp = Files.readString(fileName).split("\"id\":");
 
             System.out.println("Tree Node Count: " + (temp.length - 1));
 
@@ -198,7 +207,6 @@ public class ExcelToJson {
 
     private static String readFromExcel(
             String path,
-            LinkedList<String> foundingParentsList,
             LinkedHashMap<String, Member> subTreeMap,
             LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap) throws Exception {
 
@@ -230,40 +238,40 @@ public class ExcelToJson {
                 if (tempCode != null) {
                     // validating code
                     if (tempCode.endsWith(".")) {
-                        throw new IllegalArgumentException("Wrong Code for Member: " + tempCode);
+                        throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
                     }
                     if (!tempCode.matches("^[a-zA-Z0-9.()]*$")) {
-                        throw new IllegalArgumentException("Wrong Code for Member: " + tempCode);
+                        throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
                     }
 
-//                    if (tempFather != null) {
-//                        if (tempFather.endsWith(".")) {
-//                            throw new IllegalArgumentException("Wrong Code for Father: " + tempCode);
-//                        }
-//                        if (!tempFather.matches("^[a-zA-Z0-9.()]*$")) {
-//                            throw new IllegalArgumentException("Wrong Code for Father: " + tempCode);
-//                        }
-//                    }
-//
-//                    if (tempMother != null) {
-//                        if (tempMother.endsWith(".")) {
-//                            throw new IllegalArgumentException("Wrong Code for Mother: " + tempCode);
-//                        }
-//                        if (!tempMother.matches("^[a-zA-Z0-9.()]*$")) {
-//                            throw new IllegalArgumentException("Wrong Code for Mother: " + tempCode);
-//                        }
-//                    }
-//                    if (tempCode.length() > 1) {
-//                        if (!(spouseT.contains(tempCode.substring(tempCode.lastIndexOf("."))))) {
-//                            if (tempMother == null) {
-//                                throw new IllegalArgumentException("Wrong Code for Member: " + tempCode);
-//                            }
-//                            if (tempFather == null) {
-//                                throw new IllegalArgumentException("Wrong Code for Member: " + tempCode);
-//                            }
-//
-//                        }
-//                    }
+                    if (tempFather != null) {
+                        if (tempFather.endsWith(".")) {
+                            throw new IllegalArgumentException("Wrong Code for Father: " + tempCode);
+                        }
+                        if (!tempFather.matches("^[a-zA-Z0-9.()]*$")) {
+                            throw new IllegalArgumentException("Wrong Code for Father: " + tempCode);
+                        }
+                    }
+
+                    if (tempMother != null) {
+                        if (tempMother.endsWith(".")) {
+                            throw new IllegalArgumentException("Wrong Code for Mother: " + tempCode);
+                        }
+                        if (!tempMother.matches("^[a-zA-Z0-9.()]*$")) {
+                            throw new IllegalArgumentException("Wrong Code for Mother: " + tempCode);
+                        }
+                    }
+                    if (tempCode.length() > 1) {
+                        if (!(spouseT.contains(tempCode.substring(tempCode.lastIndexOf("."))))) {
+                            if (tempMother == null) {
+                                throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
+                            }
+                            if (tempFather == null) {
+                                throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
+                            }
+
+                        }
+                    }
 
                     tempMember =
                             new Member(
@@ -299,7 +307,7 @@ public class ExcelToJson {
             }
             rowCounter++;
         }
-        System.out.println("Group: " + foundingParentName +", Excel Converted to InMemory Java Objects completed!");
+        System.out.println("Group: " + foundingParentName + ", Excel Converted to InMemory Java Objects completed!");
         return foundingParentName;
     }
 
