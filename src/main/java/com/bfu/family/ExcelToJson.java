@@ -24,9 +24,9 @@ public class ExcelToJson {
         try {
             // Bakmeedeniya Root
             final JsTreeMember jsTreeRoot =
-                    new JsTreeMember("male2", "A.H.M.C.V.P Bakmeedeniya", "root"); // ~ out
+                    new JsTreeMember("male2", "Abayalankara Herath Mudalige Charles Vincent Prera Bakmeedeniya", "Grate-Grate-GrandFather"); // ~ out
 
-            jsTreeRoot.addChild(new JsTreeMember("female2", "R.M Muthumanike", "wife of the root")); // ~ out
+            jsTreeRoot.addChild(new JsTreeMember("Grate-Grate-GrandMother", "Ranathunga Mudiyanselage Muthumanike", "Grate-Grate-GrandMother")); // ~ out
             spouseT.add(".H");
             spouseT.add(".W");
             spouseT.add(".(D)");
@@ -35,7 +35,7 @@ public class ExcelToJson {
             LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap;
 
             String filePath =
-                    args != null && args.length > 0 && args[0] != null? args[0] :"C:\\Users\\Ashan\\Downloads\\bfu\\FamilyTreeInfo-2022.03.06.zip";
+                    args != null && args.length > 0 && args[0] != null? args[0] :"C:\\Users\\Ashan\\Downloads\\bfu\\FamilyTreeInfo-2022.03.13.zip";
 
             Path source = Paths.get(filePath);
             final String outputJsonPath = (args != null && args.length > 1 && args[1] != null) ? args[1] : "D:\\my-projects\\github\\family\\dist\\node\\data.json";
@@ -237,11 +237,12 @@ public class ExcelToJson {
 
                 if (tempCode != null) {
                     // validating code
+
                     if (tempCode.endsWith(".")) {
-                        throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
+                        throw new IllegalArgumentException("Wrong Code for Member:  " + tempCode);
                     }
                     if (!tempCode.matches("^[a-zA-Z0-9.()]*$")) {
-                        throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
+                        throw new IllegalArgumentException("Wrong Code for Member: " + tempCode);
                     }
 
                     if (tempFather != null) {
@@ -264,10 +265,10 @@ public class ExcelToJson {
                     if (tempCode.length() > 1) {
                         if (!(spouseT.contains(tempCode.substring(tempCode.lastIndexOf("."))))) {
                             if (tempMother == null) {
-                                throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
+                                throw new IllegalArgumentException("Must Contain Mother Information for : " + tempCode);
                             }
                             if (tempFather == null) {
-                                throw new IllegalArgumentException("Wrong Code for com.bfu.family.Member: " + tempCode);
+                                throw new IllegalArgumentException("Must Contain Father Information for :  " + tempCode);
                             }
 
                         }
