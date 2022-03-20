@@ -14,8 +14,9 @@ public class Member {
     private String telephone;
     private String email;
     private String profession;
+    private String imageCode;
 
-    public Member(String code, String nameEnglish, String nameSinhala, String gender, String country, String city, String citizenship, String telephone, String email, String profession, String father, String mother) {
+    public Member(String code, String nameEnglish, String nameSinhala, String gender, String country, String city, String citizenship, String telephone, String email, String profession, String father, String mother, String imageCode) {
         this.code = code;
         this.nameEnglish = nameEnglish;
         this.nameSinhala = nameSinhala;
@@ -28,16 +29,7 @@ public class Member {
         this.profession = profession;
         this.father = father;
         this.mother = mother;
-        children = new LinkedHashMap<>();
-    }
-
-    public Member(String code, String nameEnglish, String nameSinhala, String gender, String father, String mother) {
-        this.code = code;
-        this.nameEnglish = nameEnglish;
-        this.nameSinhala = nameSinhala;
-        this.gender = gender;
-        this.father = father;
-        this.mother = mother;
+        this.imageCode = imageCode;
         children = new LinkedHashMap<>();
     }
 

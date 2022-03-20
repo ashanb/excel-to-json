@@ -1,6 +1,7 @@
 package com.bfu.family;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.io.FileUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -34,26 +35,35 @@ public class ExcelToJson {
             LinkedHashMap<String, Member> subTreeMap;
             LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap;
 
-            String filePath =
-                    args != null && args.length > 0 && args[0] != null? args[0] :"C:\\Users\\Ashan\\Downloads\\bfu\\FamilyTreeInfo-2022.03.13.zip";
-
-            Path source = Paths.get(filePath);
+            boolean googleDriveMode = true;
+            String filePath;
+            File folder;
             final String outputJsonPath = (args != null && args.length > 1 && args[1] != null) ? args[1] : "D:\\my-projects\\github\\family\\dist\\node\\data.json";
+            final String outputImagePath = (args != null && args.length > 2 && args[2] != null) ? args[2] : "D:\\my-projects\\github\\family\\dist\\img\\avatar";
 
-            if (filePath.endsWith("zip")) {
-                try {
-                    Path target = Paths.get(filePath.split(".zip")[0]);
-                    unzipFolder(source, target);
-                    System.out.println("File Unzip Completed.");
+            if (!googleDriveMode) {
+                filePath = args != null && args.length > 0 && args[0] != null ? args[0] : "C:\\Users\\Ashan\\Downloads\\bfu\\FamilyTreeInfo-2022.03.13.zip";
 
-                } catch (IOException e) {
-                    e.printStackTrace();
+                Path source = Paths.get(filePath);
+
+                if (filePath.endsWith("zip")) {
+                    try {
+                        Path target = Paths.get(filePath.split(".zip")[0]);
+                        unzipFolder(source, target);
+                        System.out.println("File Unzip Completed.");
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
+                folder = new File(filePath.split(".zip")[0]);
+            } else {
+                filePath = "G:\\.shortcut-targets-by-id\\15qKCJI-EXa899iNBBULsagbsibyZ4CrI\\FamilyTree";
+                folder = new File(filePath);
             }
 
             System.out.println("Read Excel Files Started.");
 
-            File folder = new File(filePath.split(".zip")[0]);
             File[] listOfFiles = folder.listFiles();
             assert listOfFiles != null;
             List<File> files = Arrays.asList(listOfFiles);
@@ -67,34 +77,39 @@ public class ExcelToJson {
                 }
             });
 
-            int memberCounter = 2;
-            for (File file : files) {
-                subTreeMap = new LinkedHashMap<>();
-                jsTreeSubTreeMap = new LinkedHashMap<>();
+            int memberCounter = 2; // + Two founders :)
+            if (!googleDriveMode) {
+                for (File file : files) {
+                    subTreeMap = new LinkedHashMap<>();
+                    jsTreeSubTreeMap = new LinkedHashMap<>();
 
-                if (file.isFile() && file.getName().endsWith(".xlsx")) {
-                    System.out.println("Reading: " + file.getAbsolutePath());
+                    memberCounter = getObjectsFromExcel(jsTreeRoot, subTreeMap, jsTreeSubTreeMap, memberCounter, file, null, outputImagePath);
+                }
 
-                    try {
-                        // Pass Excel to Java Flat Objects
-                        String foundingParentName = readFromExcel(file.getAbsolutePath(), subTreeMap, jsTreeSubTreeMap);
-                        // Interconnect Java Objects in to Tree.
-                        convertToTreeNodes(foundingParentName, subTreeMap, jsTreeSubTreeMap);
-                        // logs
-                        jsTreeSubTreeMap
-                                .get(foundingParentName)
-                                .setTitle(jsTreeSubTreeMap.get(foundingParentName)
-                                        .getTitle() + ", Registered Members : " + (jsTreeSubTreeMap.size() - 1));
+            } else {
+                for (File dir : files) { // A B C D ....
+                    subTreeMap = new LinkedHashMap<>();
+                    jsTreeSubTreeMap = new LinkedHashMap<>();
 
-                        // add to tree
-                        jsTreeRoot.getChildren().get(0).addChild(jsTreeSubTreeMap.get(foundingParentName));
-                        memberCounter = memberCounter + jsTreeSubTreeMap.size();
-                    } catch (Exception e) {
-                        //System.out.println("========= Error occurred!, Continue!! =========" + e);
-                        throw e;
+//                    // List list = Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K");
+//                    List ignoreList = Arrays.asList("A", "B", "C", "D", "E", "G", "H", "I", "J", "K"); // debug
+//                    if (ignoreList.contains(dir.getName())) {
+//                        continue;
+//                    }
+                    File xlsxFile = null;
+                    File imageDir = null;
+                    for (File file : dir.listFiles()) { // images *.xlsx
+
+                        if (file.isFile() && file.getName().endsWith(".xlsx")) {
+                            xlsxFile = file;
+                        } else if (file.isDirectory() && file.getName().equals("Images")){
+                            imageDir = file;
+                        }
                     }
+                    memberCounter = getObjectsFromExcel(jsTreeRoot, subTreeMap, jsTreeSubTreeMap, memberCounter, xlsxFile, imageDir, outputImagePath);
                 }
             }
+
             jsTreeRoot.setTitle(jsTreeRoot.getTitle() + ", Registered Members : " + (memberCounter - 1));
             // Generate Tree Json from Java Tree.
             ObjectMapper objectMapper = new ObjectMapper();
@@ -120,6 +135,38 @@ public class ExcelToJson {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static int getObjectsFromExcel(
+            JsTreeMember jsTreeRoot,
+            LinkedHashMap<String, Member> subTreeMap,
+            LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap,
+            int memberCounter,
+            File file,
+            File imageDir,
+            String outputImagePath) throws Exception {
+
+            System.out.println("Reading: " + file.getAbsolutePath());
+
+            try {
+                // Pass Excel to Java Flat Objects
+                String foundingParentName = readFromExcel(file.getAbsolutePath(), subTreeMap, jsTreeSubTreeMap, imageDir, outputImagePath);
+                // Interconnect Java Objects in to Tree.
+                convertToTreeNodes(foundingParentName, subTreeMap, jsTreeSubTreeMap);
+                // logs
+                jsTreeSubTreeMap
+                        .get(foundingParentName)
+                        .setTitle(jsTreeSubTreeMap.get(foundingParentName)
+                                .getTitle() + ", Registered Members : " + (jsTreeSubTreeMap.size() - 1));
+
+                // add to tree
+                jsTreeRoot.getChildren().get(0).addChild(jsTreeSubTreeMap.get(foundingParentName));
+                memberCounter = memberCounter + jsTreeSubTreeMap.size();
+            } catch (Exception e) {
+                //System.out.println("========= Error occurred!, Continue!! =========" + e);
+                throw e;
+            }
+        return memberCounter;
     }
 
     public static void unzipFolder(Path source, Path target) throws IOException {
@@ -208,7 +255,7 @@ public class ExcelToJson {
     private static String readFromExcel(
             String path,
             LinkedHashMap<String, Member> subTreeMap,
-            LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap) throws Exception {
+            LinkedHashMap<String, JsTreeMember> jsTreeSubTreeMap, File imageDir, String outputImagePath) throws Exception {
 
         String foundingParentName = null;
         FileInputStream excelFile = new FileInputStream(path);
@@ -234,6 +281,7 @@ public class ExcelToJson {
                 String tempProfession = readFromCell(currentRow.getCell(9));
                 String tempFather = readFromCell(currentRow.getCell(10));
                 String tempMother = readFromCell(currentRow.getCell(11));
+                String tempImageCode = readFromCell(currentRow.getCell(12));
 
                 if (tempCode != null) {
                     // validating code
@@ -274,6 +322,17 @@ public class ExcelToJson {
                         }
                     }
 
+                    if (tempImageCode != null) {
+                        boolean check = new File(imageDir, tempImageCode + ".png").exists();
+                        if (!check) {
+                            throw new IllegalStateException("Image not Exists in Images Folder for :  " + tempCode);
+                        }
+
+                        File file = new File(imageDir, tempImageCode + ".png");
+                        FileUtils.copyFile(file, new File(outputImagePath, tempImageCode + ".png"));
+                    }
+
+
                     tempMember =
                             new Member(
                                     tempCode,
@@ -287,13 +346,14 @@ public class ExcelToJson {
                                     tempEmail,
                                     tempProfession,
                                     tempFather,
-                                    tempMother);
+                                    tempMother,
+                                    tempImageCode);
 
                     System.out.println(tempCode);
 
                     jsTreeTempMember =
                             new JsTreeMember(
-                                    tempGender.equals("M") ? "male2" : "female2",
+                                    tempImageCode != null ? tempImageCode : tempGender.equals("M") ? "male2" : "female2",
                                     fullName(tempNameEnglish, tempNameSinhala),
                                     generateTitle(tempCode, tempProfession, tempCountry, tempCitizenship)); // ~ out
 
